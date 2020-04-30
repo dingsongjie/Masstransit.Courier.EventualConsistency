@@ -1,4 +1,5 @@
 ﻿using MassTransit.Courier;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,12 +9,16 @@ namespace MasstransitTest
 {
     public class CreateOrderActivity : IExecuteActivity<CreateOrderModel>
     {
-
+        private readonly ILogger<CreateOrderActivity> logger;
+        public CreateOrderActivity(ILogger<CreateOrderActivity> logger)
+        {
+            this.logger = logger;
+        }
         public async Task<ExecutionResult> Execute(ExecuteContext<CreateOrderModel> context)
         {
-            Console.WriteLine("创建订单");
-            
-            throw new CommonActivityExecuteFaildException("当日订单已达到上限");
+            logger.LogInformation("创建订单");
+            await Task.Delay(300);
+            //throw new CommonActivityExecuteFaildException("当日订单已达到上限");
             return context.CompletedWithVariables(new CreateOrderResult { OrderId="111122",Message="创建订单成功" });
         }
     }

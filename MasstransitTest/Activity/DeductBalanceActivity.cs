@@ -1,4 +1,5 @@
 ﻿using MassTransit.Courier;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,16 +9,22 @@ namespace MasstransitTest
 {
     public class DeductBalanceActivity : IActivity<DeductBalanceModel, DeductBalanceLog>
     {
+        private readonly ILogger<DeductBalanceActivity> logger;
+        public DeductBalanceActivity(ILogger<DeductBalanceActivity> logger)
+        {
+            this.logger = logger;
+        }
         public async Task<CompensationResult> Compensate(CompensateContext<DeductBalanceLog> context)
         {
-            Console.WriteLine("还原余额");
+            logger.LogInformation("还原余额");
             //throw new Exception("11");
             return context.Compensated();
         }
 
         public async Task<ExecutionResult> Execute(ExecuteContext<DeductBalanceModel> context)
         {
-            Console.WriteLine("扣减余额");
+            logger.LogInformation("扣减余额");
+            await Task.Delay(300);
             return context.Completed(new DeductBalanceLog());
         }
     }
