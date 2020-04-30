@@ -40,25 +40,22 @@ namespace MasstransitTest
                 x.AddRequestClient<CreateOrderCommand>();
                 x.AddBus(provider => Bus.Factory.CreateUsingRabbitMq(cfg =>
                 {
-                    cfg.Host(new Uri("rabbitmq://192.168.124.63/dev"), host =>
+                    cfg.Host(new Uri(Configuration["RabbitmqConfig:HostUri"]), host =>
                     {
-                        host.Username("mqadmin");
-                        host.Password("mq62TEST");
-
+                        host.Username(Configuration["RabbitmqConfig:Username"]);
+                        host.Password(Configuration["RabbitmqConfig:Password"]);
                     });
                     cfg.UseInMemoryScheduler();
 
                     cfg.UseHealthCheck(provider);
 
                     AddActivity(cfg, provider);
-                    //cfg.ConfigureEndpoints(provider);
-
                 }));
             });
             services.AddMassTransitHostedService();
         }
 
-        private static void AddActivity(IRabbitMqBusFactoryConfigurator cfg, IServiceProvider serviceProvider)
+        private  void AddActivity(IRabbitMqBusFactoryConfigurator cfg, IServiceProvider serviceProvider)
         {
             #region CreateOrderRequest
             #region DeductStock
@@ -67,7 +64,7 @@ namespace MasstransitTest
             {
                 
                 ep.PrefetchCount = 100;
-                ep.ExecuteActivityHost<DeductStockActivity, DeductStockModel>(new Uri("rabbitmq://192.168.124.63/dev/DeductStock_compensate"), serviceProvider);
+                ep.ExecuteActivityHost<DeductStockActivity, DeductStockModel>(new Uri($"{Configuration["RabbitmqConfig:HostUri"]}/DeductStock_compensate"), serviceProvider);
             });
 
             cfg.ReceiveEndpoint("DeductStock_compensate", ep =>
@@ -91,7 +88,7 @@ namespace MasstransitTest
             cfg.ReceiveEndpoint("DeductBalance_execute", ep =>
                 {
                     ep.PrefetchCount = 100;
-                    ep.ExecuteActivityHost<DeductBalanceActivity, DeductBalanceModel>(new Uri("rabbitmq://192.168.124.63/dev/DeductBalance_compensate"), serviceProvider);
+                    ep.ExecuteActivityHost<DeductBalanceActivity, DeductBalanceModel>(new Uri($"{Configuration["RabbitmqConfig:HostUri"]}/DeductBalance_compensate"), serviceProvider);
                 });
 
             cfg.ReceiveEndpoint("DeductBalance_compensate", ep =>
@@ -118,7 +115,7 @@ namespace MasstransitTest
             cfg.ReceiveEndpoint("CreateOrderCommand", ep =>
             {
                 ep.PrefetchCount = 100;
-                var requestProxy = new CreateOrderRequestProxy();
+                var requestProxy = new CreateOrderRequestProxy(Configuration);
                 var responseProxy = new CreateOrderResponseProxy();
                 ep.Instance(requestProxy);
                 ep.Instance(responseProxy);
