@@ -1,4 +1,5 @@
-﻿using MassTransit.Courier;
+﻿using GreenPipes;
+using MassTransit.Courier;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -23,8 +24,9 @@ namespace MasstransitTest
 
         public async Task<ExecutionResult> Execute(ExecuteContext<DeductBalanceModel> context)
         {
+            
             logger.LogInformation("扣减余额");
-            await Task.Delay(300);
+            await Task.Delay(100);
             return context.Completed(new DeductBalanceLog());
         }
     }

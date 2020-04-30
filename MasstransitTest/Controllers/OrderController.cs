@@ -30,6 +30,7 @@ namespace MasstransitTest.Controllers
         [HttpGet("Get")]
         public async Task<CommonCommandResponse<CreateOrderResult>> Get()
         {
+            
             var result = await client.GetResponse<CommonCommandResponse<CreateOrderResult>>(new MasstransitTest.CreateOrderCommand()
             {
                 ProductId = "11",

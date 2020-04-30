@@ -17,7 +17,7 @@ namespace MasstransitTest
         public async Task<ExecutionResult> Execute(ExecuteContext<CreateOrderModel> context)
         {
             logger.LogInformation("创建订单");
-            await Task.Delay(300);
+            await Task.Delay(100);
             //throw new CommonActivityExecuteFaildException("当日订单已达到上限");
             return context.CompletedWithVariables(new CreateOrderResult { OrderId="111122",Message="创建订单成功" });
         }

@@ -6,6 +6,7 @@ using GreenPipes;
 using MassTransit;
 using MassTransit.Courier;
 using MassTransit.Courier.Contracts;
+using MassTransit.RabbitMqTransport;
 using MasstransitTest.Proxy;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -31,37 +32,49 @@ namespace MasstransitTest
         {
             services.AddHealthChecks();
             services.AddControllers();
+            services.AddTransient<DeductStockActivity>();
+            services.AddTransient<DeductBalanceActivity>();
+            services.AddTransient<CreateOrderActivity>();
             services.AddMassTransit(x =>
             {
-                x.AddBus(provider => Bus.Factory.CreateUsingInMemory(new Uri("loopback://localhost/"), cfg =>
+                x.AddRequestClient<CreateOrderCommand>();
+                x.AddBus(provider => Bus.Factory.CreateUsingRabbitMq(cfg =>
                 {
+                    cfg.Host(new Uri("rabbitmq://192.168.124.63/dev"), host =>
+                    {
+                        host.Username("mqadmin");
+                        host.Password("mq62TEST");
+
+                    });
                     cfg.UseInMemoryScheduler();
 
                     cfg.UseHealthCheck(provider);
 
                     AddActivity(cfg, provider);
-                    cfg.ConfigureEndpoints(provider);
+                    //cfg.ConfigureEndpoints(provider);
 
                 }));
-                x.AddRequestClient<CreateOrderCommand>();
-                x.AddActivities(System.Reflection.Assembly.GetExecutingAssembly());
             });
             services.AddMassTransitHostedService();
         }
 
-        private static void AddActivity(IInMemoryBusFactoryConfigurator cfg, IServiceProvider serviceProvider)
+        private static void AddActivity(IRabbitMqBusFactoryConfigurator cfg, IServiceProvider serviceProvider)
         {
             #region CreateOrderRequest
             #region DeductStock
-            cfg.ReceiveEndpoint("DeductStock", ep =>
+            
+            cfg.ReceiveEndpoint("DeductStock_execute", ep =>
             {
-                //PrefetchCount 在 in memory bus 中无效 
-
-                ep.ExecuteActivityHost<DeductStockActivity, DeductStockModel>(new Uri("loopback://localhost/DeductStock-Compensate"), serviceProvider);
+                
+                ep.PrefetchCount = 100;
+                ep.ExecuteActivityHost<DeductStockActivity, DeductStockModel>(new Uri("rabbitmq://192.168.124.63/dev/DeductStock_compensate"), serviceProvider);
             });
 
-            cfg.ReceiveEndpoint("DeductStock-Compensate", ep =>
+            cfg.ReceiveEndpoint("DeductStock_compensate", ep =>
             {
+                
+                ep.PrefetchCount = 100;
+                
                 ep.CompensateActivityHost<DeductStockActivity, DeductStockLog>(serviceProvider, conf =>
                  {
                      conf.UseRetry(policy =>
@@ -74,13 +87,16 @@ namespace MasstransitTest
             #endregion
 
             #region DeductBalance
-            cfg.ReceiveEndpoint("DeductBalance", ep =>
+            cfg.ConfigureEndpoints(serviceProvider);
+            cfg.ReceiveEndpoint("DeductBalance_execute", ep =>
                 {
-                    ep.ExecuteActivityHost<DeductBalanceActivity, DeductBalanceModel>(new Uri("loopback://localhost/DeductBalance-Compensate"), serviceProvider);
+                    ep.PrefetchCount = 100;
+                    ep.ExecuteActivityHost<DeductBalanceActivity, DeductBalanceModel>(new Uri("rabbitmq://192.168.124.63/dev/DeductBalance_compensate"), serviceProvider);
                 });
 
-            cfg.ReceiveEndpoint("DeductBalance-Compensate", ep =>
+            cfg.ReceiveEndpoint("DeductBalance_compensate", ep =>
             {
+                ep.PrefetchCount = 100;
                 ep.CompensateActivityHost<DeductBalanceActivity, DeductBalanceLog>(serviceProvider, conf =>
                  {
                      conf.UseRetry(policy =>
@@ -93,13 +109,15 @@ namespace MasstransitTest
             #endregion
 
             #region CreateOrder
-            cfg.ReceiveEndpoint("CreateOrder", ep =>
+            cfg.ReceiveEndpoint("CreateOrder_execute", ep =>
                 {
-                    ep.ExecuteActivityHost<CreateOrderActivity, CreateOrderModel>(new Uri("loopback://localhost/CreateOrder-Compensate"), serviceProvider);
+                    ep.PrefetchCount = 100;
+                    ep.ExecuteActivityHost<CreateOrderActivity, CreateOrderModel>(serviceProvider);
                 });
 
-            cfg.ReceiveEndpoint("Activity-Request", ep =>
+            cfg.ReceiveEndpoint("CreateOrderCommand", ep =>
             {
+                ep.PrefetchCount = 100;
                 var requestProxy = new CreateOrderRequestProxy();
                 var responseProxy = new CreateOrderResponseProxy();
                 ep.Instance(requestProxy);

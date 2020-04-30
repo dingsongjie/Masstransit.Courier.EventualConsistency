@@ -25,7 +25,7 @@ namespace MasstransitTest
         {
             var argument = context.Arguments;
             logger.LogInformation("扣减库存");
-            await Task.Delay(300);
+            await Task.Delay(100);
             return context.Completed(new DeductStockLog() { ProductId = argument.ProductId, Amount = 1 });
         }
     }
