@@ -21,8 +21,8 @@ namespace MasstransitTest.Proxy
                 Status = 1,
                 Result = new CreateOrderResult
                 {
-                    Message = context.Message.Variables.TryGetAndReturn(nameof(CreateOrderResult.Message)).ToString(),
-                    OrderId = context.Message.Variables.TryGetAndReturn(nameof(CreateOrderResult.OrderId)).ToString(),
+                    Message = context.Message.Variables.TryGetAndReturn(nameof(CreateOrderResult.Message))?.ToString(),
+                    OrderId = context.Message.Variables.TryGetAndReturn(nameof(CreateOrderResult.OrderId))?.ToString(),
                 }
             });
         }
@@ -41,7 +41,7 @@ namespace MasstransitTest.Proxy
             return Task.FromResult(new CommonCommandResponse<CreateOrderResult>
             {
                 Status = 3,
-                Message = "系统出错"
+                Message = "System error"
             });
         }
     }
