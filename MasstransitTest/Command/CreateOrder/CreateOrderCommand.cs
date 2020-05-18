@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 
 namespace MasstransitTest
 {
+    /// <summary>
+    /// 长流程 分布式事务
+    /// </summary>
     public class CreateOrderCommand
     {
         public string ProductId { get; set; }

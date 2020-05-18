@@ -1,12 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using GreenPipes;
 using MassTransit;
 using MassTransit.Courier;
 using MassTransit.Courier.Contracts;
+using MassTransit.ExtensionsDependencyInjectionIntegration;
 using MassTransit.RabbitMqTransport;
+using MasstransitTest.CreateProduct;
+using MasstransitTest.CreateProduct.Activity;
+using MasstransitTest.Dto;
 using MasstransitTest.Proxy;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -32,13 +37,14 @@ namespace MasstransitTest
         {
             services.AddHealthChecks();
             services.AddControllers();
-            services.AddTransient<DeductStockActivity>();
-            services.AddTransient<DeductBalanceActivity>();
-            services.AddTransient<CreateOrderActivity>();
+
             services.AddMassTransit(x =>
             {
+                x.AddActivities(Assembly.GetExecutingAssembly());
+
                 x.AddRequestClient<CreateOrderCommand>();
-                x.AddBus(provider => Bus.Factory.CreateUsingRabbitMq(cfg =>
+                x.AddRequestClient<CreateProductCommand>();
+                x.AddBus(context => Bus.Factory.CreateUsingRabbitMq(cfg =>
                 {
                     cfg.Host(new Uri(Configuration["RabbitmqConfig:HostUri"]), host =>
                     {
@@ -47,70 +53,19 @@ namespace MasstransitTest
                     });
                     cfg.UseInMemoryScheduler();
 
-                    cfg.UseHealthCheck(provider);
+                    cfg.UseHealthCheck(context);
 
-                    AddActivity(cfg, provider);
+                    AddActivity(cfg, context);
                 }));
             });
             services.AddMassTransitHostedService();
         }
 
-        private  void AddActivity(IRabbitMqBusFactoryConfigurator cfg, IServiceProvider serviceProvider)
+        private void AddActivity(IRabbitMqBusFactoryConfigurator cfg, IRegistrationContext<IServiceProvider> context)
         {
             #region CreateOrderRequest
-            #region DeductStock
-            
-            cfg.ReceiveEndpoint("DeductStock_execute", ep =>
-            {
-                
-                ep.PrefetchCount = 100;
-                ep.ExecuteActivityHost<DeductStockActivity, DeductStockModel>(new Uri($"{Configuration["RabbitmqConfig:HostUri"]}/DeductStock_compensate"), serviceProvider);
-            });
 
-            cfg.ReceiveEndpoint("DeductStock_compensate", ep =>
-            {
-                
-                ep.PrefetchCount = 100;
-                
-                ep.CompensateActivityHost<DeductStockActivity, DeductStockLog>(serviceProvider, conf =>
-                 {
-                     conf.UseRetry(policy =>
-                     {
-                         policy.Exponential(5, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(2));
-                     });
-                 });
-                ep.UseScheduledRedelivery(r => r.Intervals(TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(10)));
-            });
-            #endregion
-
-            #region DeductBalance
-            cfg.ConfigureEndpoints(serviceProvider);
-            cfg.ReceiveEndpoint("DeductBalance_execute", ep =>
-                {
-                    ep.PrefetchCount = 100;
-                    ep.ExecuteActivityHost<DeductBalanceActivity, DeductBalanceModel>(new Uri($"{Configuration["RabbitmqConfig:HostUri"]}/DeductBalance_compensate"), serviceProvider);
-                });
-
-            cfg.ReceiveEndpoint("DeductBalance_compensate", ep =>
-            {
-                ep.PrefetchCount = 100;
-                ep.CompensateActivityHost<DeductBalanceActivity, DeductBalanceLog>(serviceProvider, conf =>
-                 {
-                     conf.UseRetry(policy =>
-                     {
-                         policy.Exponential(5, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(2));
-                     });
-                 });
-                ep.UseScheduledRedelivery(r => r.Intervals(TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(10)));
-            });
-            #endregion
-
-            #region CreateOrder
-            cfg.ReceiveEndpoint("CreateOrder_execute", ep =>
-                {
-                    ep.PrefetchCount = 100;
-                    ep.ExecuteActivityHost<CreateOrderActivity, CreateOrderModel>(serviceProvider);
-                });
+            #region Command
 
             cfg.ReceiveEndpoint("CreateOrderCommand", ep =>
             {
@@ -120,7 +75,101 @@ namespace MasstransitTest
                 ep.Instance(requestProxy);
                 ep.Instance(responseProxy);
             });
-            #endregion 
+            #endregion
+
+            #region DeductStock
+
+            cfg.ReceiveEndpoint("DeductStock_execute", ep =>
+            {
+
+                ep.PrefetchCount = 100;
+                ep.ExecuteActivityHost<DeductStockActivity, DeductStockModel>(new Uri($"{Configuration["RabbitmqConfig:HostUri"]}/DeductStock_compensate"), context.Container);
+            });
+
+            cfg.ReceiveEndpoint("DeductStock_compensate", ep =>
+            {
+                ep.PrefetchCount = 100;
+                ep.CompensateActivityHost<DeductStockActivity, DeductStockLog>(context.Container, conf =>
+                 {
+                     ep.UseRetry(policy =>
+                     {
+                         policy.Exponential(5, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(2));
+                     });
+                 });
+                ep.UseScheduledRedelivery(r => r.Intervals(TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(10)));
+            });
+            #endregion
+
+            #region DeductBalance
+            cfg.ReceiveEndpoint("DeductBalance_execute", ep =>
+                {
+                    ep.PrefetchCount = 100;
+                    ep.ExecuteActivityHost<DeductBalanceActivity, DeductBalanceModel>(new Uri($"{Configuration["RabbitmqConfig:HostUri"]}/DeductBalance_compensate"), context.Container);
+                });
+
+            cfg.ReceiveEndpoint("DeductBalance_compensate", ep =>
+            {
+                ep.PrefetchCount = 100;
+                ep.CompensateActivityHost<DeductBalanceActivity, DeductBalanceLog>(context.Container, conf =>
+                 {
+                     //ep.UseMessageRetry(policy =>
+                     //{
+                     //    policy.Exponential(5, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(2));
+                     //});
+
+                 });
+                
+                //ep.UseScheduledRedelivery(r => r.Intervals(TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(10)));
+            });
+            #endregion
+
+            #region CreateOrder
+            cfg.ReceiveEndpoint("CreateOrder_execute", ep =>
+                {
+                    ep.PrefetchCount = 100;
+                    ep.ExecuteActivityHost<CreateOrderActivity, CreateOrderModel>(context.Container);
+                });
+            #endregion
+            #endregion
+
+            #region CreateProductRequest
+
+            #region Command
+
+            cfg.ReceiveEndpoint("CreateProductCommand", ep =>
+            {
+                ep.PrefetchCount = 100;
+                var requestProxy = new CreateProductRequestProxy(Configuration);
+                var responseProxy = new CreateProductResponseProxy();
+                ep.Instance(requestProxy);
+                ep.Instance(responseProxy, config =>
+                {
+
+                });
+            });
+            #endregion
+
+            #region CreateProduct
+
+            cfg.ReceiveEndpoint("CreateProduct_execute", ep =>
+            {
+                ep.PrefetchCount = 100;
+                ep.ExecuteActivityHost<CreateProductActivity, CreateProductModel>(context.Container);
+            });
+
+            #endregion
+
+            #region CreateStock
+            cfg.ReceiveEndpoint("CreateStock_execute", ep =>
+            {
+                ep.PrefetchCount = 100;
+                ep.ExecuteActivityHost<CreateStockActivity, CreateStockModel>(context.Container);
+            });
+
+
+            #endregion
+
+
             #endregion
         }
 

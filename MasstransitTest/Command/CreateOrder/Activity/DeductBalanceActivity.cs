@@ -18,8 +18,8 @@ namespace MasstransitTest
         public async Task<CompensationResult> Compensate(CompensateContext<DeductBalanceLog> context)
         {
             logger.LogInformation("还原余额");
-            //throw new Exception("11");
-            return context.Compensated();
+            throw new ArgumentException("some things were wrong");
+            //return context.Compensated();
         }
 
         public async Task<ExecutionResult> Execute(ExecuteContext<DeductBalanceModel> context)

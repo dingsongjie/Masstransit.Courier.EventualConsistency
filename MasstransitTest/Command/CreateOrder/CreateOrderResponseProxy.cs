@@ -1,6 +1,7 @@
 ﻿using MassTransit;
 using MassTransit.Courier;
 using MassTransit.Courier.Contracts;
+using MasstransitTest.Common;
 using Quartz.Util;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ using System.Threading.Tasks;
 namespace MasstransitTest.Proxy
 {
     public class CreateOrderResponseProxy :
-            RoutingSlipResponseProxy<CreateOrderCommand, CommonCommandResponse<CreateOrderResult>, CommonCommandResponse<CreateOrderResult>>
+            RoutingSlipResponseProxy<CreateOrderCommand, CommonCommandResponse<CreateOrderResult>, CommonCommandResponse<CreateOrderResult>>,IConsumer<RoutingSlipCompensationFailed>
     {
 
         protected override Task<CommonCommandResponse<CreateOrderResult>> CreateResponseMessage(ConsumeContext<RoutingSlipCompleted> context, CreateOrderCommand request)
@@ -43,6 +44,11 @@ namespace MasstransitTest.Proxy
                 Status = 3,
                 Message = "System error"
             });
+        }
+
+        public Task Consume(ConsumeContext<RoutingSlipCompensationFailed> context)
+        {
+            throw new NotImplementedException();
         }
     }
 }

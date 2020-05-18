@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using MassTransit;
 using MassTransit.Courier;
 using MassTransit.Courier.Contracts;
+using MasstransitTest.CreateProduct.Activity;
+using MasstransitTest.Dto;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -19,25 +21,39 @@ namespace MasstransitTest.Controllers
 
         private readonly ILogger<OrderController> _logger;
         private readonly IBus bus;
-        IRequestClient<CreateOrderCommand> client;
+        IRequestClient<CreateOrderCommand> createOrderClient;
+        IRequestClient<CreateProductCommand> createProductClient;
 
-        public OrderController(ILogger<OrderController> logger, IBus bus, IRequestClient<CreateOrderCommand> client)
+        public OrderController(ILogger<OrderController> logger, IBus bus, IRequestClient<CreateOrderCommand> createOrderClient, IRequestClient<CreateProductCommand> createProductClient)
         {
             _logger = logger;
             this.bus = bus;
-            this.client = client;
+            this.createProductClient = createProductClient;
+            this.createOrderClient = createOrderClient;
         }
-        [HttpGet("Get")]
-        public async Task<CommonCommandResponse<CreateOrderResult>> Get()
+        [HttpGet("CreateOrder")]
+        public async Task<CommonCommandResponse<CreateOrderResult>> CreateOrder()
         {
-            
-            var result = await client.GetResponse<CommonCommandResponse<CreateOrderResult>>(new MasstransitTest.CreateOrderCommand()
+
+            var result = await createOrderClient.GetResponse<CommonCommandResponse<CreateOrderResult>>(new MasstransitTest.CreateOrderCommand()
             {
                 ProductId = "11",
                 Price = 100,
                 CustomerId = "22"
             });
-            
+
+            return result.Message;
+        }
+        [HttpGet("CreateProduct")]
+        public async Task<CommonCommandResponse<CreateProductResult>> CreateProduct()
+        {
+
+            var result = await createProductClient.GetResponse<CommonCommandResponse<CreateProductResult>>(new CreateProductCommand()
+            {
+                ProductId = "11",
+                Price = 100,
+            });
+
             return result.Message;
         }
     }

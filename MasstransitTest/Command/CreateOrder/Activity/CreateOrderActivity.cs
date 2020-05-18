@@ -1,4 +1,5 @@
 ﻿using MassTransit.Courier;
+using MasstransitTest.Common;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -32,12 +33,5 @@ namespace MasstransitTest
     {
         public string OrderId { get; set; }
         public string Message { get; set; }
-    }
-    public class CommonActivityExecuteFaildException: Exception
-    {
-        public CommonActivityExecuteFaildException(string message):base(message)
-        {
-
-        }
     }
 }
