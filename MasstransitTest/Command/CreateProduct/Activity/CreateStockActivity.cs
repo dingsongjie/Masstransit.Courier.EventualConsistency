@@ -1,4 +1,5 @@
 ﻿using MassTransit.Courier;
+using MasstransitTest.Common;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -18,7 +19,7 @@ namespace MasstransitTest.CreateProduct.Activity
         {
             logger.LogInformation($"产品:{context.Arguments.ProductId} 新建库存成功");
             await Task.Delay(100);
-            //throw new CommonActivityExecuteFaildException("当日订单已达到上限");
+            //throw new CommonActivityExecuteFaildException("库存出错");
             return context.Completed();
         }
     }

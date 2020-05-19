@@ -8,7 +8,10 @@ using MassTransit;
 using MassTransit.Courier;
 using MassTransit.Courier.Contracts;
 using MassTransit.ExtensionsDependencyInjectionIntegration;
+using MassTransit.Pipeline.Filters;
 using MassTransit.RabbitMqTransport;
+using MasstransitTest.Common;
+using MasstransitTest.Common.Filter;
 using MasstransitTest.CreateProduct;
 using MasstransitTest.CreateProduct.Activity;
 using MasstransitTest.Dto;
@@ -57,6 +60,7 @@ namespace MasstransitTest
 
                     AddActivity(cfg, context);
                 }));
+
             });
             services.AddMassTransitHostedService();
         }
@@ -91,11 +95,12 @@ namespace MasstransitTest
                 ep.PrefetchCount = 100;
                 ep.CompensateActivityHost<DeductStockActivity, DeductStockLog>(context.Container, conf =>
                  {
-                     ep.UseRetry(policy =>
-                     {
-                         policy.Exponential(5, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(2));
-                     });
+                     conf.AddPipeSpecification(new RoutingSlipCompensateErrorSpecification<DeductStockActivity, DeductStockLog>());
                  });
+                ep.UseMessageRetry(policy =>
+                {
+                    policy.Exponential(5, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(2));
+                });
                 ep.UseScheduledRedelivery(r => r.Intervals(TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(10)));
             });
             #endregion
@@ -112,14 +117,13 @@ namespace MasstransitTest
                 ep.PrefetchCount = 100;
                 ep.CompensateActivityHost<DeductBalanceActivity, DeductBalanceLog>(context.Container, conf =>
                  {
-                     //ep.UseMessageRetry(policy =>
-                     //{
-                     //    policy.Exponential(5, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(2));
-                     //});
-
+                     conf.AddPipeSpecification(new RoutingSlipCompensateErrorSpecification<DeductBalanceActivity, DeductBalanceLog>());
                  });
-                
-                //ep.UseScheduledRedelivery(r => r.Intervals(TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(10)));
+                ep.UseMessageRetry(policy =>
+                {
+                    policy.Exponential(5, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(2));
+                });
+                ep.UseScheduledRedelivery(r => r.Intervals(TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(10)));
             });
             #endregion
 
@@ -163,7 +167,16 @@ namespace MasstransitTest
             cfg.ReceiveEndpoint("CreateStock_execute", ep =>
             {
                 ep.PrefetchCount = 100;
-                ep.ExecuteActivityHost<CreateStockActivity, CreateStockModel>(context.Container);
+                ep.ExecuteActivityHost<CreateStockActivity, CreateStockModel>(context.Container, conf =>
+                {
+                    conf.AddPipeSpecification(new RoutingSlipExecuteErrorSpecification<CreateStockActivity, CreateStockModel>());
+                });
+
+                //ep.UseMessageRetry(policy =>
+                //{
+                //    policy.Exponential(5, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(2));
+                //});
+                //ep.UseScheduledRedelivery(r => r.Intervals(TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(10)));
             });
 
 

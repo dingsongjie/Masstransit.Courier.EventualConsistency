@@ -18,16 +18,16 @@ namespace MasstransitTest
         public async Task<CompensationResult> Compensate(CompensateContext<DeductBalanceLog> context)
         {
             logger.LogInformation("还原余额");
-            throw new ArgumentException("some things were wrong");
-            //return context.Compensated();
+            //throw new ArgumentException("some things were wrong");
+            return context.Compensated();
         }
 
         public async Task<ExecutionResult> Execute(ExecuteContext<DeductBalanceModel> context)
         {
-            
+
             logger.LogInformation("扣减余额");
             await Task.Delay(100);
-            return context.Completed(new DeductBalanceLog());
+            return context.Completed(new DeductBalanceLog() { Price = 100 });
         }
     }
     public class DeductBalanceModel
@@ -37,6 +37,6 @@ namespace MasstransitTest
     }
     public class DeductBalanceLog
     {
-
+        public int Price { get; set; }
     }
 }

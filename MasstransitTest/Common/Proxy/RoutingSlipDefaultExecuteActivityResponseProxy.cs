@@ -8,10 +8,9 @@ using System.Threading.Tasks;
 
 namespace MasstransitTest.Common.Proxy
 {
-    public abstract class RoutingSlipExecuteActivityResponseProxy<TRequest, TResponse, TFaultResponse> :
+    public abstract class RoutingSlipDefaultExecuteActivityResponseProxy<TRequest, TResponse, TFaultResponse> :
         IConsumer<RoutingSlipActivityCompleted>,
         IConsumer<RoutingSlipActivityFaulted>
-        //IConsumer<RoutingSlipCompleted>
         where TRequest : class
         where TResponse : class
         where TFaultResponse : class
@@ -68,9 +67,5 @@ namespace MasstransitTest.Common.Proxy
 
         protected abstract Task<TFaultResponse> CreateFaultedResponseMessage(ConsumeContext<RoutingSlipActivityFaulted> context, TRequest request, Guid requestId);
 
-        //public Task Consume(ConsumeContext<RoutingSlipCompleted> context)
-        //{
-        //    throw new NotImplementedException();
-        //}
     }
 }

@@ -1,6 +1,7 @@
 ﻿using MassTransit;
 using MassTransit.Courier;
 using MassTransit.Courier.Contracts;
+using MasstransitTest.Common.Proxy;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace MasstransitTest.Proxy
 {
-    public class CreateOrderRequestProxy : RoutingSlipRequestProxy<CreateOrderCommand>
+    public class CreateOrderRequestProxy : RoutingSlipDefaultRequestProxy<CreateOrderCommand>
 
     {
         private readonly IConfiguration configuration;
@@ -25,7 +26,6 @@ namespace MasstransitTest.Proxy
 
             builder.AddActivity("CreateOrder", new Uri($"{configuration["RabbitmqConfig:HostUri"]}/CreateOrder_execute"), new CreateOrderModel { Price = request.Message.Price, CustomerId = request.Message.CustomerId, ProductId = request.Message.ProductId });
 
-            //builder.AddSubscription(new Uri($"{configuration["RabbitmqConfig:HostUri"]}/CreateOrderCommand_events"),RoutingSlipEvents.All);
             return Task.CompletedTask;
         }
     }

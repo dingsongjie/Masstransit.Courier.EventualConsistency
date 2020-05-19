@@ -19,7 +19,7 @@ namespace MasstransitTest.CreateProduct.Activity
         {
             logger.LogInformation("创建产品成功");
             await Task.Delay(100);
-            throw new CommonActivityExecuteFaildException("当日订单已达到上限");
+            //throw new CommonActivityExecuteFaildException("当日产品创建已达到上限");
             return context.CompletedWithVariables(new CreateProductResult { ProductId = "110", Message = "创建产品成功" });
         }
     }

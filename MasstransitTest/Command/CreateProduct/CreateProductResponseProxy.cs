@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 namespace MasstransitTest.CreateProduct
 {
     public class CreateProductResponseProxy :
-            RoutingSlipExecuteActivityResponseProxy<CreateProductCommand, CommonCommandResponse<CreateProductResult>, CommonCommandResponse<CreateProductResult>>
+            RoutingSlipDefaultExecuteActivityResponseProxy<CreateProductCommand, CommonCommandResponse<CreateProductResult>, CommonCommandResponse<CreateProductResult>>
     {
         public override string ActivityName => "CreateProduct";
 
@@ -50,17 +50,4 @@ namespace MasstransitTest.CreateProduct
             });
         }
     }
-    //public class CreateProductResponseProxy2 :
-    //       RoutingSlipResponseProxy<CreateProductCommand, CommonCommandResponse<CreateProductResult>, CommonCommandResponse<CreateProductResult>>
-    //{
-    //    protected override Task<CommonCommandResponse<CreateProductResult>> CreateFaultedResponseMessage(ConsumeContext<RoutingSlipFaulted> context, CreateProductCommand request, Guid requestId)
-    //    {
-    //        throw new NotImplementedException();
-    //    }
-
-    //    protected override Task<CommonCommandResponse<CreateProductResult>> CreateResponseMessage(ConsumeContext<RoutingSlipCompleted> context, CreateProductCommand request)
-    //    {
-    //        throw new NotImplementedException();
-    //    }
-    //}
 }
