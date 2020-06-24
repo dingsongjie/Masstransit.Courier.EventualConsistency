@@ -19,7 +19,7 @@ namespace Masstransit.Courier.EventualConsistency
         {
             logger.LogInformation("创建订单");
             await Task.Delay(100);
-            throw new CommonActivityExecuteFaildException("当日订单已达到上限");
+            //throw new CommonActivityExecuteFaildException("当日订单已达到上限");
             return context.CompletedWithVariables(new CreateOrderResult { OrderId="111122",Message="创建订单成功" });
         }
     }

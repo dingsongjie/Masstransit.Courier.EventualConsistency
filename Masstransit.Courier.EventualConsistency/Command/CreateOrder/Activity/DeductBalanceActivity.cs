@@ -18,6 +18,7 @@ namespace Masstransit.Courier.EventualConsistency
         public async Task<CompensationResult> Compensate(CompensateContext<DeductBalanceLog> context)
         {
             logger.LogInformation("还原余额");
+            var log = context.Log;
             //throw new ArgumentException("some things were wrong");
             return context.Compensated();
         }

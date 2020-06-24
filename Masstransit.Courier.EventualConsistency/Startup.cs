@@ -23,6 +23,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Masstransit.Courier.EventualConsistency.Command.Sample;
 
 namespace Masstransit.Courier.EventualConsistency
 {
@@ -43,10 +44,12 @@ namespace Masstransit.Courier.EventualConsistency
 
             services.AddMassTransit(x =>
             {
-                x.AddActivities(Assembly.GetExecutingAssembly());
-
+                var currentAssembly = Assembly.GetExecutingAssembly();
+                x.AddActivities(currentAssembly);
+                x.AddConsumers(currentAssembly);
                 x.AddRequestClient<CreateOrderCommand>();
                 x.AddRequestClient<CreateProductCommand>();
+                x.AddRequestClient<SampleMessageCommand>();
                 x.AddBus(context => Bus.Factory.CreateUsingRabbitMq(cfg =>
                 {
                     cfg.Host(new Uri(Configuration["RabbitmqConfig:HostUri"]), host =>
@@ -59,6 +62,11 @@ namespace Masstransit.Courier.EventualConsistency
                     cfg.UseHealthCheck(context);
 
                     AddActivity(cfg, context);
+
+                    cfg.ReceiveEndpoint("SampleCommand", ep =>
+                    {
+                        ep.Consumer<SampleMessageCommandHandler>(context.Container);
+                    });
                 }));
 
             });
